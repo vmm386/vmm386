@@ -1,0 +1,317 @@
+\input texinfo  @c -*-Texinfo-*-
+@setfilename report.info
+@settitle Final Report
+@footnotestyle end
+@c @setchapternewpage off
+@iftex
+@afourpaper
+@end iftex
+
+@titlepage
+@title Final Report
+@subtitle A Virtual Machine Monitor for the Intel 80386
+@subtitle May 1995
+@author C.J. Luke
+@end titlepage
+
+@ifinfo
+@node Top, Intro, (dir), (dir)
+@top Final Report
+
+This report details my opinions and feelings on the VMM/386 project.
+
+@menu
+* Introduction::
+* Contribution::
+* Appraisal::
+* Future Ideas::
+@end menu
+@end ifinfo
+
+
+@node Introduction, Contribution, Top, Top
+@chapter Introduction
+
+The aim we set for the project was to provide a means of running, possibly
+multiple, virtual systems under a monitor. This monitor would take the
+form of a fairly primative yet versatile operating system. This was to be
+run on a PC with minimum specification being an 80386 processor, in
+other words, a PC. Our
+dream was to be able to run other operating systems under it, and
+hopefully get far enough to test the feasibility of a full 80386
+virtualisation.
+
+This project appealed to me since it is very close, and probably as close
+as is reasonably possible, to my primary field of interest in Embedded
+and Real-time systems. Having had previous in-depth experience with PC's,
+and some industrial experience in the Embedded systems field prior to
+commencing my Degree courses, I felt more compelled to this project.
+My experience in embedded systems is based largely on the implementation
+of multitasking on very small systems.
+
+Since the idea was to be able to run @emph{any} operating system, this
+does not exclude the possibility of systems configured in a manner other
+than that like the PC, and would thus prove a useful tool in
+experimental embedded systems development. The experience gained from
+this project would also provide useful insights into how systems work,
+from the lowest level right the way to higher level concepts.
+
+@node Contribution, Appraisal, Introduction, Top
+@chapter My Personal Contribution
+
+During the course of this project, I did not, to as large an extent as
+the other members of the team, produce units of the project. While
+I was involved in the development of the Debugging tools and the
+Floppy driver, I spent time checking through developed code, fixing
+and tidying as I saw necessary.
+
+The initial idea was that I would attempt to port a full-screen debugger,
+as used in the DOS port of the GNU C compiler, for use under our
+project to debug running virtual machines. However, it proved
+infeasibly difficult to attempt this until the project was at a stage
+to support the debugging functions, and such a point arrived too late
+to reasonably achieve the port.
+
+@menu
+* Debugging::
+* Floppy Driver::
+* Other contributions::
+
+* Documentation
+@end menu
+
+@node Debugging, Floppy Driver, , Contribution
+@section Debugging tools
+
+There were planned two types of debugging tools. Those used primarily for
+our debugging of the Kernel and that which would be used by a user to
+debug a virtual machine.
+
+@menu
+* Kernel Debugger::
+* Virtual Debugger::
+@end menu
+
+@node Kernel Debugger, Virtual Debugger, , Debugging
+@section Kernel Debugger
+
+This is the small suite of commands, in the @samp{debug} module, that allow
+a primitive display and modification of memory, as well as the feature
+of the 80386's debugging registers. These were by no means flashy, and
+suited the tasks to which they were put.
+
+The disassembler code is courtesy of R.D. Eager, who happened to port
+a GNU disassembler over the Christmas break. If the debug module is loaded
+when an exception is caught, along with the normal register values, the
+code at the instruction pointer is displayed on the tty.
+
+@node Virtual Debugger, , Kernel Debugger, Debugging
+
+This was never implemented, It was hoped that I would be able to,
+since much of the user interface work was already done in the version
+used with the DJGPP port (to DOS) of the GNU C compiler.
+
+Choice of this debugger as the base for our project was decided after
+a search of the Internet for debugging, and particularly disassembly,
+tools. It was decided very early on that a complete debugger with
+disassembly was outside the scope and timescale of the project to
+code from scratch.
+
+Once the code for a disassembler was donated by R.D. Eager, the pressure
+for a disassembler was alleviated somewhat.
+
+The general interfqce for the full-screen disassembler was discussed, and
+it was agreed that hooking it into the vm, by passing all the calls
+through the disassembler, was the way to go. However, this wouldn't
+be available and not even specifiable till quite a late stage in the
+project, so the debugger was put on hold and I was forced to find other
+jobs to do, whilst the other members were well underway with the other
+available work.
+
+@node Floppy Driver, Other Contributions, Debugging, Contribution
+@section Floppy Driver
+
+The floppy driver was passed my way because it seemed to be a driver
+that could cause considerable grief. Whilst not neccesary for a working
+system, it was deemed essential nonetheless, so while work commenced
+on the rest of the system, I partook in coding the floppy driver.
+
+The floppy system used in PC's is based on an ancient floppy disc
+controller, and in the case of the AT compatibles, a fair amount of
+extra hardware is bolted on to increase the functionality of a basicly
+very primative FDC. Such functionality includes support for
+"High-Density" disks, which involves the programming of different
+data rates.
+
+The floppy driver uses the same code as in the hard disk driver for
+queueing I/O requests, to ensure that access are kept synchronous
+at the low level, but allowing asynchronous access at all higher levels.
+
+Despite the individual elements of driving the FDC appearing to be
+quite simple, it is quite sensetive to order and timing, and a lot of
+timing information for disks has to be entered. Some confusion was
+generated by the different drivers for Linux and FreeBSD differing from
+the Intel documentation, in that they often ignored interrupts that
+the Intel documenation claimed were generated. It was not until the
+NEC documentation said they @emph{weren't} generated that certain
+errors made sense.
+
+@node Other Contributions, Documentation, Floppy Driver, Contribution
+@section Other Contributions
+
+During the implementation of the, albeit shaky, floppy driver, I came
+across a number of minor bugs in parts of Kernel code that had gone
+untested. As a result, I went through various areas of code that appeared
+to as yet be untested or unused and checked that they seemed sane.
+
+Most fixes appeared in parts of the kernel concerned with the Timer,
+DMA (as a result of testing with the Floppy) and in one or two
+devices.
+
+@node Documentation, , Other Contributions, Contribution
+@section Documentation
+
+My contribution to the documentation of the project, naturally, includes
+all the modules I wrote, as well as a few others besides. I also
+@emph{prettyfied} the final documents in their HTML format, for use with
+WWW style browsers to give a hypertext interface to the project
+documentation.
+
+Of the Technical documentation, I wrote:
+
+@itemize @bullet
+@item
+``DMA Handling'' (under the section ``The Kernel'').
+
+@item
+``The Floppy Disk Driver'' and ``The Ramdisk Device'' (under the section
+``Device Drivers'').
+
+@item
+``Virtual Floppy'' (under the section ``Virtual Devices'').
+
+@item
+``The Debugger'' (the whole section, which is a description of the
+available commands).
+@end itemize
+
+Of the User Manual, I wrote:
+
+@itemize @bullet
+@item
+``The Floppy Disk Device Driver'' and ``The Ramdisk'' (under the section
+``Devices'').
+
+@item
+``Virtual Floppy Device'' (under the section ``Virtual Machines'').
+
+@item
+``The Debugger''
+@end itemize
+
+@node Appraisal, Future Ideas, Contribution, Top
+@chapter Appraisal of the Project
+
+At the end of the alloted project period, I feel the project has
+been quite successful. We had few setbacks during the course of
+development, and the project has progessed over the period quite
+steadily.
+
+The system as it stands is a fairly simple, but flexible and easily
+extendible operating system that allows the user to spawn multiple
+virtual machines. This in itself is a remarkable achievement. It is
+pretty stable for a system of it's (relatively small) maturity, and
+it is certainly a @emph{working} system. It is, of course, not
+bug-free, but the design is pretty clean and simple so very few bugs
+would be difficult to track down, even with the debugging tools as
+limited as they are.
+
+Once the environment was setup, as in the directory structure and the
+tools to build with, and then the booting code written, progress was
+pretty rapid. I can clearly remember the excitement at getting the
+system to multi-task.
+
+Many of our initial targets, especially the deadlines we wanted to try
+to adhere to, were a little ambitious. Given more time, we would
+definately have been able to progress the project much much further.
+Since each new part of the system is for the most part entirely different
+to previous work, there is little room to grow tired of the project.
+Programming and the subsequent virtualisation of devices being the
+most apparent.
+
+I certainly would have loved to have tried the full 80386 virtualisation,
+and there is definately still scope for us to try this beyond the
+examinable project or for a furture project team to do this. In
+investigating this, we found that it is not entirely feasible. The
+procesor does not generate exceptions on enough conditions for us to
+do a full virtualisation without ``cheating''. We considered, for
+example, taking Linux and ensuring it either did not generate cases we
+could not catch, or making it ``tell'' our operating system of the case.
+We felt that time was pressing however, and decided to work on the
+project as it has resulted.
+
+I feel that I contributed to the project more towards the end than during
+the initial development. This is largely due to the debugger, which I
+was going to be primarily involved in, needed a certain level of support
+to be there before I could proceed. Once I started working, howver,
+I felt that my contributions were worthwhile and contributive.
+
+@node Future Ideas, , Appraisal, Top
+@chapter Future Ideas
+
+Individually and as a group, we have discussed many ways in which the
+system, as it stands, could be furthered or extended. Here are some of
+them:
+
+@itemize bullet
+@item
+As mentioned above, attempt to virtualise the 80386 as fully as
+possible. It would have the limitation of only being able to run 
+``hacked'' operating systems, but it would be impressive nonetheless.
+
+@item
+As mentioned before, my particular field of interest is Embedded
+systems. I would like to develop suite of modules, with the
+specific feature of being able to program their I/O or memory
+addresses at runtime, such that a complete system can be
+designed and implemented in the virtual, controlled environment.
+In industry, the common method is to use an In-Circuit-Emulator
+(ICE) on a physical computer system. This obviously involves
+building a machine, and ICE's do not tend to be cheap. For
+experimental purposes, the virtual environment is much more
+preferable.
+
+@item
+Finish the debugger. The full screen debugger is an attractive
+option, since it adds to the functionality of the system as
+a development environment by an order of magnitude. This also
+has been mentioned earlier.
+
+@item
+Develop the kernel into more of a general and featured operating system.
+Presently, only primitive operating system type support is given and
+attention has been given to the support of virtual machines. This
+would introduce the concept of `native' tasks (as opposed to
+virtual tasks).
+
+@item
+Once the system has been developed into a more featured operating
+system, an obvious step is to port an editor and
+compiler to it, such as Elvis (a `vi' clone - my preffered
+editor) and 
+GCC (The GNU C compiler). Presently, the system depends on Linux
+as it's development environment.
+
+@item
+A nice idea that we thought of, was to provide some sort of
+Unix interface at the system level. This could either take the
+form of an emulation of Unix system calls, or by the provision
+of our own standard libraries for linking with programs, providing
+Unix style function calls.
+@end itemize
+
+@bye
+
+Local Variables:
+compile-command: "makeinfo --no-headers -o report.doc report.texi"
+End:

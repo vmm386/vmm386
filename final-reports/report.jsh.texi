@@ -1,0 +1,772 @@
+\input texinfo  @c -*-Texinfo-*-
+@setfilename report.info
+@settitle Final Report
+@footnotestyle end
+@c @setchapternewpage off
+@iftex
+@afourpaper
+@end iftex
+
+@titlepage
+@title Final Report
+@subtitle A Virtual Machine Monitor for the Intel 80386
+@subtitle May 1995
+@author J.S. Harper
+@end titlepage
+
+@ifinfo
+@node Top, Intro, (dir), (dir)
+@top Final Report
+
+This is the final report on the project ``A Virtual Machine Monitor
+for the Intel 80386'' by John Harper.
+
+@menu
+* Intro::			Why I undertook the project
+* Contribution::		A list of my contributions
+* Appraisal::			My conclusions
+* Future Directions::		Suggested improvements/additions
+@end menu
+@end ifinfo
+
+@node Intro, Contribution, Top, Top
+@chapter Introduction
+
+The overall aim of our project was to design and implement a simple
+operating system for PC type computers. The main function of this
+system being to provide multiple virtual machines in which standard PC
+operating systems could be executed. For example a virtual machine
+executing MS-DOS could be running at the same time as a virtual
+machine executing the Windows system.
+
+One of the main reasons that I undertook this project was that I
+thought it would be sufficiently challenging to make it a worthwhile
+subject; if we were able to succeed in our aims the resulting system
+would be genuinely useful. I also thought that this may be the only
+opportunity I would get to be involved in designing and implementing
+an operating system (albeit a small one), after attending several
+courses about operating systems I was interested in applying this
+knowledge.
+
+The idea of providing @emph{truly} virtual machines also intrigued me;
+all the other operating systems that I have used provide virtual
+machines (processes) that are designed by the people who wrote the
+system. We would have to conform to a standard already defined (by the
+people who designed the PC and its related components) to ensure that
+we made our virtual machines as compatible as possible with real PC
+systems.
+
+Since I had never developed anything for a PC before I felt that I had
+a lot to gain from this project.
+
+@node Contribution, Appraisal, Intro, Top
+@chapter My Contribution
+
+This section of my report details the full extent of my contribution
+to the project, I have separated this into several areas.
+
+Although not a contribution as such, my first task was to familiarise
+myself with the architecture of the PC. This involved learning to
+program in 80x86 assembly language and reading several books about the
+devices found in a PC. I also read some material about the IBM VM/370
+operating system since this uses a similar concept to our system.
+
+@menu
+* Kernel::
+* Device Drivers::
+* Virtual Devices::
+* Filing System::
+* Shell::
+* Other Contributions::
+
+* Documentation::
+@end menu
+
+@node Kernel, Device Drivers, , Contribution
+@section The Kernel
+
+The kernel is the core of the system; it provides all the memory
+management, task handling and other essential parts of the system.
+Many parts of the kernel were written collaboratively, that is, one of
+us might originally write a bit of it then, subsequently, other
+members of the group might fix bugs or add functionality to the
+existing code. In other cases, two or more of us might write parts of
+the kernel together.
+
+@ignore
+Areas of the kernel which were written in this collaborative manner
+include the following 
+
+@itemize @bullet
+@item
+The interrupt and exception handlers.
+
+@item
+The timer handling. This includes the timer interrupt handlers and the
+logical timer requests.
+
+@item
+The task handling functions. Some of this was written individually but
+a great deal was done collaboratively.
+
+@item
+The shell commands defined by the kernel.
+@end itemize
+@end ignore
+
+The following sections describe some of my individual contributions to
+the implementation of the kernel.
+
+@menu
+* Module Handling::
+* Memory Management::
+* Scheduler::
+* Time and Date::
+@end menu
+
+@node Module Handling, Memory Management, , Kernel
+@subsection Module Handling
+
+The design of our system allows separate parts of its functionality to
+be loaded and unloaded while the system is running. Each part is known
+as a module and is basically a shared library stored as a file in
+the filing system.
+
+I specified and implemented the functions which comprise the
+kernel's module handling abilities; this includes functions to `open'
+a named module (obtain a handle on a module's exported functions),
+to close a previously opened module and to attempt to unload a named
+module from the system. As part of the `open' operation I
+wrote a loader to read a module from disk and relocate it into
+the kernel.
+
+Modules are stored on disk in a format that I defined, this format is
+in some ways similar to the Unix @code{a.out} format, but much simpler
+since less information needs to be stored. I have written several Unix
+tools for manipulating these files; including programs to create a
+module file from an a.out object file (created by @code{ld}) and to
+list the contents of a module file.
+
+@node Memory Management, Scheduler, Module Handling, Kernel
+@subsection Memory Management
+
+I implemented almost all of the kernel's memory management
+subsystem (although we were all involved in designing the type of
+memory model to be used). Our system uses the 80386's memory-paging
+abilities to create the illusion that each virtual machine has a
+single contiguous physical memory area. It also uses the segmentation
+hardware to divide each task's address space in two, the largest part
+for the virtual machine running in the task, the other bit for the
+sole use of the kernel. Some of the parts of my memory management
+implementation are described below
+
+@itemize @bullet
+@item
+Page allocation. This provides a means to allocate and release memory
+on a page-by-page basis.
+
+@item
+Page table primitives.
+Each task is given its own page directory defining the physical memory
+that its logical addresses are mapped to. I have implemented primitive
+functions to allocate and manipulate these page directories.
+
+@item
+Page fault handler.
+The page fault handler is called whenever a memory access addresses a
+page which is not available for access.
+
+@item
+Dynamic memory allocation in the kernel.
+The kernel and the modules loaded into it sometimes need to allocate and
+free memory dynamically (for example, as modules are loaded memory
+needs to be found for them). Although I did at first implement my own
+memory allocation functions we decided to use a version of the
+freely-available GNU malloc package to get better performance.
+@end itemize
+
+@node Scheduler, Time and Date, Memory Management, Kernel
+@subsection Scheduler
+
+The one part of the tasking subsystem which I wrote is the scheduler
+and its associated functions. Although a fairly straightforward
+scheduler, it fulfils the needs of our system very well.
+
+Each task specifies a quantum and a priority parameter. The quantum
+defines how long the task may keep the CPU before being preempted, the
+priority defines how the task is inserted into the list of tasks
+waiting to get the CPU (known as the @dfn{run-queue}).
+
+When the quantum of the currently-executing task expires (checked by
+one of the timer IRQ handlers) the scheduler is called. This causes the
+current task to be preempted and inserted back into the run-queue. Then
+the task at the front of the run-queue is given the CPU for the length
+of its quantum.
+
+As you can see this is very simple, all decisions about which task to
+run next are taken by the function to insert a task into the
+run-queue: basically it scans through the list until tasks of the same
+priority as the one to be inserted are found, then the task is
+inserted at the end of the group (unless it was preempted before its
+quantum expired, in which case it is inserted at the front of the
+group).
+
+Other things associated with the scheduler that I implemented are
+functions to suspend and wake a task, functions to disable and enable
+preemption of the current task, and standard semaphore objects
+to allow inter-task synchronisation (@code{wait} and @code{signal}).
+
+@node Time and Date, , Scheduler, Kernel
+@subsection Time and Date Handling
+
+This part of the kernel concerns itself with handling time values.
+Internally these values are coded as integers storing the number of
+seconds since the start of the year 1970. I have written code to
+manipulate these values, most importantly to convert them to more
+conventional encodings (i.e. year, month, day, hour, minute and
+second).
+
+@node Device Drivers, Virtual Devices, Kernel, Contribution
+@section Device Drivers
+
+The following sections describe the physical device drivers that I
+have implemented, each one is defined as a separate module.
+
+@menu
+* Keyboard::
+* Video::
+* Hard Disk::
+@end menu
+
+@node Keyboard, Video, , Device Drivers
+@subsection Keyboard Device Driver
+
+My keyboard device driver implementation consists of two main
+parts:
+
+@itemize @bullet
+@item
+The physical keyboard driver.
+This comprises an interrupt service routine called each time a new
+scan code is available, and other functions required to program the
+keyboard and its controller chip. As scan codes are received they are
+translated into key codes (a byte representing the key pressed or
+released) and sent to the logical keyboard which currently owns
+the keyboard focus. A function is also provided to switch the keyboard
+focus between logical keyboards.
+
+@item
+The cooked keyboard driver.
+This is a type of logical keyboard; as it receives key codes
+from the interrupt service routine it uses a keymap to translate them
+into ASCII characters. The task owning the logical keyboard can either
+arrange to have these characters sent immediately to it, or to have
+them stored in a buffer. The task can then call a function to read the
+next character from the buffer (or put the task to sleep if the buffer
+is empty).
+@end itemize
+
+@node Video, Hard Disk, Keyboard, Device Drivers
+@subsection Video Device Driver
+
+The video device driver allows the virtualisation of different types
+of video adapters. It has complete control over the physical video
+hardware and programs this to be as compatible as possible as the
+virtual display currently being displayed. Since only one virtual
+display can be viewed at once there are functions to set which
+virtual display is currently in the foreground.
+
+Currently I have completed virtualisations of the two simplest video
+adapters available, the MDA and CGA cards. The video driver has
+been designed to be extendable: more types of virtual adaptor can be
+added without the need to recompile the video module. Each type of
+virtualised adapter exports a set of standard functions which allow
+the generic video routines to control the virtual display.
+
+@node Hard Disk, , Video, Device Drivers
+@subsection Hard Disk Device Driver
+
+The hard disk driver is split into two separate parts: generic hard
+disk handling and drivers for the different types of hard disks and
+their controllers available.
+
+The generic hard disk handling has functions to maintain a list of all
+hard-disk-like devices in the system, to read and write blocks from a
+hard disk, and to decode the partition table of a hard disk, adding
+each partition to the system as a separate device. It is also
+responsible for all communication between the filing system and the
+hard disk: hard disk partitions may be mounted in the filing system.
+
+At present only IDE hard disks are supported since I have only
+implemented a physical driver for IDE disks. This maintains a list of
+I/O requests to the controller and processes them sequentially. While
+an I/O request is being processed the task that made the request is put
+to sleep, allowing other tasks to run.
+
+I also implemented the generic block device support, this is a header
+file providing some of the functionality needed by any driver for a
+block device. This was in fact abstracted from an earlier version of
+the IDE driver.
+
+@node Virtual Devices, Filing System, Device Drivers, Contribution
+@section Virtual Devices
+
+Each virtual device emulates a particular piece of hardware, they are
+installed in a virtual machine when it is initialised. This section
+describes the virtual devices which I have implemented.
+
+@menu
+* Virtual Machines::
+* Virtual PIC::
+* Virtual PIT::
+* Virtual BIOS::
+* Virtual Keyboard::
+* Virtual IDE::
+* TTY Device::
+@end menu
+
+@node Virtual Machines, Virtual PIC, , Virtual Devices
+@subsection Virtual Machines
+
+A virtual machine provides a virtualisation of the CPU device, each
+virtual machine is built on top of a standard system task, the main
+change being that the task usually executes in the processor's V86
+mode. To provide as complete a virtual machine as possible many
+instructions executed in the machine have to be emulated. The main
+parts of the virtual machine module are described below.
+
+@itemize @bullet
+@item
+Virtual machine management. The creation and deletion of virtual
+machines, how tasks are used to provide the control thread for a
+virtual machine.
+
+@item
+Virtual I/O ports. The virtual machine is not allowed to access any of
+the system's real I/O ports, instead every I/O instruction must be
+trapped and emulated. Virtual devices are able to register ranges of
+I/O addresses which they wish to virtualise.
+
+@item
+Fault handling. Many instructions that would execute normally in a
+real machine will cause an exception when executed in a virtual
+machine. The machine's fault handlers are responsible for deciphering
+the type of exception and taking the necessary action. This may be to
+emulate the instruction (i.e. I/O instructions) or even to terminate
+the virtual machine. In some cases exceptions are passed through to
+the virtual machine (i.e. divide-by-zero errors).
+
+Virtual machines also have a special page fault handler to allow
+correct access of virtual ROMs.
+
+@item
+Arpl handlers. The @code{ARPL} instruction (illegal in virtual
+machines) is used to provide a system-call mechanism for virtual
+machines. This allows code in a virtual machine to call functions in
+the system itself. The main use of this is for the Virtual BIOS to
+call functions to handle the individual BIOS functions in kernel mode.
+
+@item
+Virtual A20 gate. The A20 gate is used to enable the 20th address
+line. When disabled the low 64k of memory in a virtual machine is
+mapped to the point immediately above 1M as well.
+
+@item
+Commands to initialise virtual machines. When a virtual machine is
+created the user must specify exactly which virtual devices to install
+in it. Three shell commands (@code{vminit}, @code{vmvxd} and
+@code{vmlaunch}) are used to define virtual machine initialisation
+blocks. These blocks tell the system how to create the virtual
+machine --- basically, which resources to give it.
+@end itemize
+
+@node Virtual PIC, Virtual PIT, Virtual Machines, Virtual Devices
+@subsection Virtual PIC
+
+The PIC is the system's Programmable Interrupt Controller. It handles
+interrupt requests from external devices, passing them to the
+processor when necessary. The Virtual PIC emulates two of these
+devices for each virtual machine (one master, one slave) to be
+compatible with the real PICs found in a real machine.
+
+When a virtual device needs to virtualise an IRQ in a virtual machine
+it simply calls a function in the vpic module. The Virtual PIC then
+arranges for an interrupt of the correct type to be generated in the
+virtual machine when necessary.
+
+Although not all the functionality of a real PIC has been emulated I
+have implemented all the features that are normally used.
+
+@node Virtual PIT, Virtual BIOS, Virtual PIC, Virtual Devices
+@subsection Virtual PIT
+
+PIT stands for Programmable Interval Timer, it's the PC's timer device,
+capable of measuring short periods of time. The Virtual PIT device
+emulates most functions of a real PIT for each virtual machine which
+it is installed in.
+
+It uses a timer request structure to implement channel zero of each
+PIT (the channel connected to IRQ0), the state of the other timer
+channels is simply calculated from the current time and the time at
+which they started ticking.
+
+@node Virtual BIOS, Virtual Keyboard, Virtual PIT, Virtual Devices
+@subsection Virtual BIOS
+
+The BIOS is the PC's Basic Input/Output System: a set of assembly
+language routines to provide a standard interface to the devices found
+in most systems. These routines are divided into groups for each piece
+of hardware or concept; each group being called through a software
+interrupt.
+
+The Virtual BIOS supports most of the functions found in a real BIOS,
+more importantly, it supports them in a way that gains the maximum
+performance from the system. In theory it would be (almost) possible
+to use a standard BIOS in each virtual machine (since all hardware
+devices are virtualised), in practice however this is not such a good
+idea. The Virtual BIOS can use its knowledge of the other parts of the
+system to implement its functions without accessing the virtual
+devices at the I/O port level. For example the hard disk BIOS calls
+are implemented by talking directly with the Virtual IDE device,
+instead of using the hard disk controller's I/O ports.
+
+I implemented the framework of the Virtual BIOS and some of the
+functions that it supports. Other members of the group were also
+responsible for implementing functions. What usually happened was that
+whoever wrote the virtual device accessed by a BIOS call implemented
+the call itself.
+
+@node Virtual Keyboard, Virtual IDE, Virtual BIOS, Virtual Devices
+@subsection Virtual Keyboard
+
+This is basically a set of functions to emulate the behaviour of the
+keyboard I/O ports. Virtual machines communicating with the keyboard
+actually communicate with their own virtual keyboard, only when this
+keyboard has the focus will they receive scan codes.
+
+Each virtual keyboard is derived from a raw logical keyboard; the key
+codes received from this logical keyboard are translated back into
+scan codes (using a set of translation maps) and stored in a buffer
+ready to be read by the virtual machine. To help the Virtual BIOS the
+Virtual Keyboard also implements a keyboard interrupt handler that the
+BIOS can use.
+
+The Virtual Keyboard also handles virtualising the system's speaker
+(since the speaker is controlled through one of the keyboard I/O ports).
+
+@node Virtual IDE, TTY Device, Virtual Keyboard, Virtual Devices
+@subsection Virtual IDE
+
+The Virtual IDE module provides a complete emulation of a simple
+IDE controller with a single hard disk attached to it. The storage
+space of the virtual hard disk can be represented in two different
+ways:
+
+@itemize @bullet
+@item
+In a file stored in the filing system.
+
+@item
+Using a whole partition of the physical hard disk. Since the whole
+hard disk is also represented by a logical partition it is possible to
+use all of the physical hard disk as a virtual hard disk. This can
+sometimes be useful since it allows systems installed on the computer
+to be booted in a virtual machine.
+@end itemize
+
+As well as emulating all the I/O ports of a real IDE controller (and
+most of the commands such a controller supports) higher level virtual
+disk access is provided through functions exported by the module.
+
+@node TTY Device , , Virtual IDE, Virtual Devices
+@subsection TTY Device
+
+The tty device driver does not actually control any hardware device
+like most device drivers. Instead it provides a unified interface to
+the video and keyboard drivers, allowing tasks to open @dfn{ttys}
+(logical consoles). A tty is like a character terminal --- ASCII
+characters are received from a logical keyboard and programs may
+output characters to the related virtual display.
+
+One of the most complex parts of the tty implementation is the
+@code{read_line} function to read a line of input from a tty. This
+provides Emacs-like line-editing commands together with a history
+mechanism to allow the recall of lines previously entered in the tty.
+
+@node Filing System, Shell, Virtual Devices, Contribution
+@section Filing System
+
+I designed and implemented the system's native filing system. It is a
+Unix-style filing system (i.e. it has inodes, indirect blocks, symbolic
+links, etc@dots{}) and has proved itself to be fairly efficient and
+reliable.
+
+There are four main parts to the filing system:
+
+@itemize @bullet
+@item
+Device handling.
+Each device provides a sequence of blocks to the filing system, they
+each have a unique name and provide functions to access the blocks
+they control.
+
+@item
+Buffer cache.
+All block accesses from the file handling part of the file system go
+through the buffer cache; the function of the buffer cache is to keep
+cached copies of the contents of the most recently accessed disk
+blocks. My implementation provides functions to read, write and update
+blocks via the buffer cache.
+
+@item
+File handling.
+The largest part of the file system, this provides all the standard
+functions for file manipulation (as in a Unix system, @code{open},
+@code{close}, @code{read}, @code{write}, @code{seek}, etc@dots{}).
+
+@item
+Shell commands.
+I have written a number of commands for our system's shell which allow
+the user of the system to manipulate files in the filing system. These
+commands include things like @code{cp}, @code{rm}, @code{type} (similar
+to Unix @code{cat}), @code{ls}, @code{cd}, @code{ln}, @code{mkdir},
+@code{rmdir} and @code{mv}.
+@end itemize
+
+One of the most important problems I had while writing the filing system
+was to ensure that all functions were completely reentrant. Unlike some
+operating systems, our system is still preemptable while it is running
+in kernel mode, this means that at any point in the filing system
+implementation the CPU can be given to another task. If that task is
+also using the filing system havoc would ensue if reentrancy wasn't
+guaranteed. The filing system uses several shared data structures, all
+access to these structures must be serialised to ensure that only one
+task is accessing a structure at once. In some places simply bracketing
+the access in @code{forbid} and @code{permit} statements is sufficient;
+other times a more complex solution is needed. For example, the buffer
+cache controls some of its most critical sections using task-lists to
+build structures similar to semaphores.
+
+To test the filing system I compiled all of it on a Unix system with a
+specially written device to simulate a disk on a file in the Unix file
+system. This was linked with the shell and a special shell command to
+copy files from the Unix file system to my file system, allowing me to
+test the various operations of the filing system. This self-contained
+version of the filing system was also used to copy the disk-based
+modules from the Unix filing system, on which they were compiled, to
+the root partition of our system's filing system.
+
+@node Shell, Other Contributions, Filing System, Contribution
+@section The Shell
+
+The shell is the system's user interface, it allows the user to enter
+commands to be executed by the system. These commands are implemented
+by the parts of the system they control and then registered with the
+shell. More than one instance of the shell can be running at once, a
+command exists to create a new interactive shell in a new tty.
+
+As well as supporting interactive use, the shell is also able to read
+its commands from files, known as shell scripts. This is often useful,
+since common sets of commands can be executed by simply sourcing the
+file they are contained by.
+
+@node Other Contributions, Documentation, Shell, Contribution
+@section My Other Contributions
+
+Other, more minor, contributions which I have made to the
+implementation of our project include the following
+
+@itemize @bullet
+@item
+Producing some of the system header files; for example to define
+the basic C types used in the system.
+
+@item
+Organising the source tree of the system, including producing a set of
+Makefiles to make building the system as straightforward as possible.
+
+@item
+Implementing a standard @code{printf} function (including the
+@code{sprintf}, @code{vprintf} and @code{vsprintf} variants)
+to allow formatted output by any part of the system.
+
+@item
+Writing a generic doubly-linked list data type. This is used
+throughout the system wherever doubly-linked lists are required.
+@end itemize
+
+@node Documentation, , Other Contributions, Contribution
+@section Documentation
+
+For the system's technical manual I wrote the sections with the
+following titles (and all subsections thereof),
+
+@itemize @bullet
+@item
+``System Types''
+
+@item
+``The Kernel'' (except the subsection ``DMA Handling'')
+
+@item
+``Generic Block Device Support'', ``The Hard Disk Driver'', ``Video
+Drivers'', ``Keyboard Driver'' and ``TTY Driver''
+
+@item
+``Virtual Machines'', ``Virtual Device Structure'', ``Launching
+Virtual Machines'', ``Virtual PIC'', ``The Virtual PIT'', ``Virtual
+BIOS'', ``Virtual IDE'' and ``Virtual Keyboard''
+
+@item
+``The Filing System''
+
+@item
+``The Shell''
+
+@item
+``Utility Functions''
+
+@item
+``Development Environment''
+@end itemize
+
+I also wrote the following chapters of the user manual,
+
+@itemize @bullet
+@item
+``System Overview''
+
+@item
+``The Shell''
+
+@item
+``The Filing System''
+
+@item
+``The Kernel''
+
+@item
+``The Hard Disk Device Driver'', ``The TTY Device Driver''
+
+@item
+``Virtual Machines'' (except for the subsections ``Virtual Floppy''
+and ``Virtual Printer'')
+@end itemize
+
+@node Appraisal, Future Directions, Contribution, Top
+@chapter Appraisal of the Project
+
+Overall I think that the project was very successful; we succeeded in
+producing a simple operating system (no small feat in itself) which
+allows multiple virtual machines to run concurrently. The system is
+very stable considering its age, no doubt bugs exist but we have
+encountered very few that we have not been able to fix straight away.
+
+As well as working well, I believe that the system is fairly elegant;
+everything is split into well-defined modules making the system easier
+to implement and understand. This also drastically reduces the
+potential for unplanned interactions between areas of the system to
+introduce subtle bugs. The use of dynamically loaded modules has also
+helped to make the system easily extendable: new modules can be written
+and added to the system without the existing modules being changed. For
+example if I wished the video driver to virtualise the VGA card I could
+simply write a VGA virtualisation module that hooks into the video
+driver.
+
+One problem that we did have was the deadlines that we set ourselves
+when specifying the project. In most cases we had underestimated the
+time we would need to complete a task. Also there were several
+dependencies between tasks that we had not recognised, there was a lot
+more work than we thought needed before we were able to get even the
+simplest version of the system running. Once we did have a basic
+system up and running the project progressed very quickly, for example
+once we had got the kernel booting into a single task it only took
+about a week before we had it multi-tasking.
+
+Although the original aim of the project was to virtualise the whole
+of the 80386, including the processor's protected mode, we soon
+realised that this would not be feasible. The 80386 does not provide
+the necessary features to virtualise protected mode. We did think
+about compromising and supporting the areas we could not virtualise
+through system calls that operating systems running in a virtual
+machine could use (this would only be of use to people developing
+operating systems). In the end though we decided that we would not have
+enough time to do this properly and therefore concentrated on
+virtualising real mode as completely as we could.
+
+I think I contributed well to all phases of the project. The modules
+that I wrote generally worked well once they had been tested and
+debugged. Overall, I think that we worked fairly well together as a
+group: we got on well with each other and helped each other with the
+work that we were attempting.
+
+@node Future Directions, , Appraisal, Top
+@chapter Future Directions
+
+There are many different directions in which the system could be taken
+in the future. This section outlines a few of the more interesting
+possibilities.
+
+@itemize @bullet
+@item
+Virtualise the 80386's protected mode as completely as possible.
+This could possibly using system calls to implement features which
+can't be virtualised properly. Although this would only allow
+operating systems whose source code is available to be run in
+protected mode (so the necessary system calls can be patched in), it
+would still be very useful for developing systems, especially in
+conjunction with the debugger mentioned below.
+
+@item
+Add proper virtual memory with page-based swapping to disk. It would
+be fairly straightforward to allow the pages in the user segment of
+tasks to be swapped out when free memory gets tight.
+
+@item
+Implement a dynamic buffer cache. Currently the filing system's buffer
+cache uses a fixed number of static buffers. It would be better if the
+number of buffers used to store disk blocks expanded and contracted
+with the amount of free memory in the system (and therefore utilising
+as much of the available memory as possible throughout).
+
+@item
+Create a virtual VGA device. This would let virtual machine to take
+full use of the system's display hardware, as well as allowing more
+programs run in a virtual machine. One difficulty with this is how to
+virtualise the video buffer (when the display is not in the
+foreground) especially with respect to the bit plane mask registers.
+
+@item
+Write a proper debugger to give full control over virtual machines.
+This would be very useful for debugging the programs (and operating
+systems) executing in the virtual machine. Although many of the hooks
+required are already implemented (i.e. gaining control from exception
+handlers) some extra ones may need to be added to the kernel or vm
+modules.
+
+@item
+Separate the filing system into two layers: a generic layer and an
+implementation layer. Different types of streams and filing systems
+could then be accessed through the same interface (i.e. pipes and
+regular files). This would allow the shell to support redirection and
+piping.
+
+@item
+Concentrate on the actual operating system features, not the virtual
+machines. Currently the system implements only the most basic
+operating system services, it could be extended to provide more of the
+features found in normal operating systems.
+
+@item
+Implement a `Unix-emulation' module. This would be similar to the
+module which provides virtual machines; instead of emulating a PC
+it would `emulate' a Unix-like virtual machine. This would probably
+require adding a generic layer to the filing system as described
+above.
+@end itemize
+
+@bye
+
+Local Variables:
+compile-command: "makeinfo --no-headers -o report.doc report.texi"
+End:

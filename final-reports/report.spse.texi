@@ -1,0 +1,598 @@
+\input texinfo  @c -*-Texinfo-*-
+@setfilename report.info
+@settitle Final Report
+@footnotestyle end
+@iftex
+@afourpaper
+@end iftex
+
+@titlepage
+@title Final Report
+@subtitle A Virtual Machine Monitor for the Intel 80386
+@subtitle May 1995
+@author S.P.S. Evans
+@end titlepage
+
+@ifinfo
+@node Top, Introduction, (dir), (dir)
+@top Final Report
+
+@menu
+* Introduction:: 
+* Contribution::
+* Appraisal::
+* Future::
+@end menu
+@end ifinfo
+
+@node Introduction, Contribution, Top, Top
+@chapter Introduction to the Project.
+
+The aim of the project was to write a small operating system for the Intel
+80386 processor capable of supporting multiple virtual 8086 PC's using an
+in-built mode of the 80386. This involved writing a kernel and the device
+drivers to control all of the hardware and also a filing system and user
+interface. We also had to create an environment that emulated the hardware 
+of a standard PC. 
+
+This project interested me for several reasons. I have a strong interest in
+operating systems and operating systems technology and to have the chance to
+write one was greatly welcomed. Secondly, I was intrigued by the process of 
+emulating a computer environment and wanted to see what technical challenges
+would arise from such a project. Because we were emulating a system already
+available, there was a device interface that we had to conform to and it was
+quite interesting to see how hardware could be emulated by software. 
+And finally, I wanted to gain an indepth knowledge of the architecture of the
+Intel 80x86 family of processors with respect to how they work and how they
+are programmed.
+
+The specification for the project was simply to virtualise the 80386 processor.
+This could be approached by two main methods, either a monitor program 
+residing on top of another operating system and requiring a monolithic 
+kernel or a complete operating system which would give us more freedom in the
+design of the system. Because of the complexity of the system, the design of
+the system was of a dynamic nature since it was impossible to predict what
+problems would arise throughout the project. It was hard to present an
+overall design of the project because it changed constantly. Although this
+may be seen as bad engineering practise, we decided that there would be little
+point following a path to completion if it could be seen that it would
+eventually become a dead end. Notable design points that were decided upon
+early on and which were followed through include:
+
+@itemize @bullet
+
+@item
+Modular Kernel Design. This allowed us to have a small core kernel which
+made debugging easier and to implement other parts of the operating system
+by the use of dynamically loadable modules.
+
+@item
+Complete Virtualisation. No virtual machine is allowed any direct access to
+the hardware. Although this can impact on the speed of the system, it was
+decided that robustness of the system was the highest priority.
+
+@item
+Two Level Interrupts. By allowing for queued and direct interrupts, only the
+most critical interrupts would actually do processing inside the interrupt
+handler itself while other interrupts can be processed in a more orderly way.
+
+@item
+Native Filing System. This was necessary to allow us to implement efficiently
+the large files required for disk images. It also meant that we would not be
+restricted by the limitations of other file systems.
+
+@item
+Pre-emptive Multitasking. This gives the user good performance whilst allowing
+the running of multiple virtual machines concurrently.
+
+@item
+Re-entrant Kernel. Because all of the modules including the kernel were written
+to be re-entrant, it meant that multiple threads of execution could run
+concurrently inside of the kernel except for a few critical regions.
+
+@end itemize
+
+@node Contribution, Appraisal, Introduction, Top
+@chapter My Contribution to the Project.
+
+This chapter documents the contribution I made to the project.
+
+@menu
+* Initialisation::
+* Device Drivers::
+* Virtual Device Drivers::
+* Kernel::
+* Spooler::
+* System Log Daemon::
+* Development Tools::
+* Documentation::
+@end menu
+
+@node Initialisation, Device Drivers, , Contribution
+@section Initialisation
+
+This is by far my largest contribution to the project. It was concerned with 
+everything that had to be done between switching the machine on to getting to
+the entry point of the kernel code. This part of the project took a long time
+to develop, consuming all the time from the start of the project (October)
+up until the second term (January). Although this took a long time to develop,
+through out the course of this part of the project,
+I learned an invaluable amount
+about the operation of the 80386 and the startup procedure of the BIOS. This
+was important information which was later applied to the construction of the 
+virtual machines. The work for this part of the project can be broken into
+three parts:
+
+@itemize @bullet
+@item
+Boot sector. This is a small piece of code that is resides on the boot sector
+of a disk and is read in by the BIOS. Although this is a small piece of code
+(at most 512 bytes) it was very tricky to write as I had to learn about writing
+this by looking at boot sectors from other operating systems. It was constantly
+refined throughout the duration of the project as more features needed to be
+added, including support for booting off of a second hard drive and from 
+logical partitions on a hard disk. Two environments which I found useful in
+developing the boot sector were OS/2's virtual DOS sessions and NuMega's
+Soft/ICE debugger. While I was starting on the boot sector code, I was able to
+test some basic ideas using OS/2's virtual DOS sessions. If it crashed then
+I could simply kill off the session and start again. Once the boot sector had
+gotten to a more advanced state, I used the excellent Soft/ICE debugger to
+track down harder too find errors.
+
+@item
+16-bit Startup Code. This code is loaded up by the boot sector and is
+responsible for checking the system, loading the kernel and entering protected
+mode. Originally it had been suggested that I make this execute from DOS to
+save having to implement any form of disk loaders and to help with debugging.
+I decided however that making the code work from a clean state (i.e. with no
+underlying operating system present) would be a better place to start because
+eventually it would have to run from this state anyway and having an operating
+system already present could cause trouble because I could not be sure of what
+exactly it was doing and if I would be assuming too much about the state of the
+system. Again Soft/ICE was an invaluable tool in helping me to debug this 
+complicated area of code.
+
+@item
+32-bit Startup Code. This code starts execution as soon as the processor enters
+protected mode and initialises the system in 32-bit mode. It is responsible
+for setting the processors registers correctly before entering the main
+kernel routine. This part of the code was the hardest to write because no
+debugging facilities were available to me and I had to use a slow painful
+processes of printing pieces of text to the screen, which I had to read quickly
+before the machine reset itself!
+
+@end itemize
+
+@node Device Drivers, Virtual Device Drivers, Initialisation, Contribution
+@section Device Drivers
+
+Although I had hoped to write several device drivers for the final system
+I only had time enough to write a ramdisk device. This allows the user
+to allocate a part of memory as a virtual disk. Although not a complicated
+device by all means, it serves as a useful guide to writing block device
+drivers because there is no hardware to communicate with leaving just
+the outline of what is required to write a block device driver. I had
+originally planned to implement several device drivers including a serial and
+printer driver, but I felt that getting the kernel itself to work was the 
+most important area for my attention. The modular design of the system means
+that creating new device drivers is simple with respect to the interface 
+they have to present to the system.
+
+@node Virtual Device Drivers, Kernel, Device Drivers, Contribution
+@section Virtual Device Drivers
+
+The virtual device drivers that I wrote for the project are listed below:
+
+@itemize @bullet
+
+@item
+Virtual CMOS. This provides the system with permanent storage of system
+settings and also provides a realtime clock so that the system can keep the
+current time even when it is switched off. This module implements an almost
+perfect emulation of this device except for the periodic interrupt handler.
+This was problematic to implement because our kernel was actually running off
+of the @emph{real} periodic interrupt and would have been very difficult to
+implement accurately.
+
+@item
+Virtual DMA. This attempts to provide an emulation of the DMA chips used for
+hardware data transfers. This is actually a very hard device to emulate, so
+it was implemented simply by storing the values sent it to and then allowing
+other virtual devices that required DMA to interpret the information in the
+virtual chips for themselves.
+
+@item
+Virtual Printer. This provides emulation of up to four printer ports per 
+virtual machine and uses the spooler to share the printer between all the
+virtual machines. This emulation works at both the port I/O level and the
+BIOS level. 
+
+@item
+Virtual BIOS. This provides the virtual machine with an a simplistic version
+of a BIOS (Basic Input/Output System). Most of the BIOS functions were 
+emulated by calling back to the main operating system. This was worked on
+cooperatively by the group as each person had to add parts to it to support
+a particular device. I had to add functions to work with the virtual printer
+and the virtual CMOS.
+
+@end itemize
+
+@node Kernel, Spooler, Virtual Device Drivers, Contribution
+@section Kernel
+
+The kernel was the core of the project and as such was a collaborative effort.
+Parts were added as needed, and one person would fix another persons code
+as was felt necessary. Many parts of the kernel can be viewed as two halves:
+a low level half directly using some of the instructions of the 80386 and
+thus requiring assembler level programming, and a higher level half, which
+is more abstracted and thus written in C.
+
+The parts of the kernel that I wrote are listed below:
+
+@itemize @bullet
+
+@item
+Low level startup and main kernel routine. This was written as part of the 
+initialisation and required mostly assembler level programming. This deals
+with the one time startup and calling of initialisation routines for:
+
+@itemize @bullet
+
+@item 
+Memory Management.
+
+@item
+Module Management.
+
+@item
+Exception and Interrupt Handlers.
+
+@item
+The Scheduler and the Kernel Task.
+
+@end itemize
+
+@item
+Interrupt entry and allocation. This again required assembler level programming
+for the interrupt entry points. Interrupt allocation allowed for interrupts
+to be set as direct or queued.
+
+@item
+Exception entry. This is similar to the interrupt entry code and handles the
+setup for the higher level exception handlers.
+
+@item
+Direct Memory Access (DMA). The routines for DMA transfers and allocation.
+
+@item
+Low level task switching. This was a very tricky part of the kernel to write
+and took a large amount of time to get working properly. This code handles the
+actual switch between tasks, the scheduling of tasks being handled by a higher
+level scheduler.
+
+@end itemize
+
+@node Spooler, System Log Daemon, Kernel, Contribution
+@section Spooler
+
+The Spooler provides an interface between the physical printer and the virtual
+printers used in each virtual machine. It also allows the user to print out
+files by providing an interface to be used at the shell level. This was an
+interesting piece of the system since it had to handle multiple streams of
+input and proved to be quite complicated, especially since it required
+a separate task to handle the printing and so synchronisation was required
+between two tasks.
+
+@node System Log Daemon, Development Tools, Spooler, Contribution
+@section System Log Daemon
+
+The System Log Daemon was another module which provides the same sort of
+service as the Spooler, namely sharing access to one file by multiple
+processes. The approach taken was fairly similar to that of the Spooler and
+required considerable work to get it to run correctly with no synchronisation
+problems.
+
+@node Development Tools, Documentation, System Log Daemon, Contribution
+@section Development Tools
+
+Over the course of writing the operating system, I had to construct various
+tools and utilities to enable me to convert the output from the compiler and
+linker into programs and data files that could be used in other parts of the
+project. The list of tools that I wrote is as follows:
+
+@itemize @bullet
+
+@item
+@code{bbin} - Takes the output of the 16bit linker and creates a boot sector
+binary after doing appropriate checking of input file.
+
+@item
+@code{bbin16} - General converter to take the output of the 16bit linker and
+output a raw binary file without any header.
+
+@item
+@code{bsc} - Converts the boot sector binary into a C header file for 
+inclusion as a block of code in another program. The input file is checked for
+consistency.
+
+@item
+@code{e2b} - Converts a 32bit a.out file formant into a raw binary. Used for
+creating the final kernel image.
+
+@item
+@code{makeimage} - Takes the boot sector, 16bit startup code and kernel image
+and writes them out to a file or device, fixing up information in the boot
+sector's data area.
+
+@item
+@code{sbb} - Shows the data area of the boot sector to check that information
+was stored correctly in it.
+
+@item
+@code{sysdisk} - Creates a bootable disk containing the boot sector, 16bit
+startup code and kernel code.
+
+@end itemize
+
+@node Documentation, , Development Tools, Contribution
+@section Documentation.
+
+I contributed the following sections to the Technical Manual:
+
+@itemize @bullet
+@item
+``The Initialisation Process''.
+
+@itemize @bullet
+
+@item
+`Boot Loader'.
+
+@item
+`System Check'.
+
+@item
+`Loading The Kernel'.
+
+@item
+`Setting Hardware To A Known State'.
+
+@item
+`Setting Up Page Tables'.
+
+@item 
+`Setting Up Descriptor Tables'.
+
+@item
+`Entering Protected Mode'.
+
+@item
+`32-bit Setup'.
+
+@end itemize
+
+@item
+``Virtual Devices''.
+
+@itemize @bullet
+
+@item
+`Virtual DMA Controller'.
+
+@item
+`Virtual CMOS'.
+
+@item
+`Virtual Printer Ports'.
+
+@end itemize
+
+@item 
+``System Log Daemon''.
+
+@itemize @bullet
+
+@item
+`Introduction'.
+
+@item
+`Operation'.
+
+@item
+`Functions'.
+
+@end itemize
+
+@item
+``Printer Spooler''.
+
+@itemize @bullet
+
+@item
+`Spooler Introduction'.
+
+@item
+`Spooler Operation'.
+
+@item
+`Spooler Functions'.
+@end itemize
+
+@end itemize
+
+And I contributed the following sections to the User Manual:
+
+@itemize @bullet
+@item
+``Printer Spooler''.
+
+@item
+``System Log Daemon''.
+
+@item
+``Virtual Printer''.
+
+@end itemize
+
+@node Appraisal, Future, Contribution, Top
+@chapter My Appraisal of the Project.
+
+My overall feeling about the project is that it was a success. Although we
+did not accomplish the main task which was to allow full virtualisation of
+the 80386's protected mode, I believe that we made substantial progress towards
+this goal. I have definitely gained a fuller understanding of the design and
+construction of operating systems and of supporting virtualisation of another
+system. Although this project could be expanded in many directions and taken
+further in all of these, the task of developing and writing the core components
+was accomplished. Obviously more time could be spent writing virtual and 
+physical device drivers given the range of hardware accessories available
+and refining the current devices would also benefit the overall system in terms
+of speed, efficiency and stability. Personally I believe that we have written
+a small, clean and relatively bug-free operating system and for a first attempt
+I am pleased with the result.
+
+The project group consisting of John, Chris and myself worked well together.
+Although we did impose deadlines at the start of the project, these proved
+to be unrealistic as we came upon problems that we had not encountered before.
+The interaction between the individual members of the group was also good and
+no one minded one person for example debugging someone elses code or adding
+bits to it. We also had an advantage because the project itself was exciting
+and we all showed a great deal of enthusiasm towards it. This resulted in large
+programming sessions which might last several hours where all members were
+working on the same piece of source code and the ideas generated and problem
+solved by just all sitting around one computer with each person adding parts
+as they saw fit. The design of the project also meant that a cooperative
+effort could be made with the design of the kernel whilst separate parts in
+modules could be developed on one's own. The running of the group was also
+done in a democratic way, and no one tried to impose their ideas on everyone
+else.
+
+As regards my own performance on the project I was quite happy with the work
+I produced. I spent the first term working on the booting and initialisation  
+part of the project. This took a large amount of time because firstly I was
+experimenting with new features of the processor and secondly I had relatively
+few debugging tools to help me. I was also frustrated in my efforts by the
+fact that the tools I was originally using to produce binary images did not
+actually work as it should have. This prompted me to write my own suite of
+tools to accomplish the tasks of creating boot sectors and binary images of 
+the loader and kernel. I also had the task of getting two important aspects
+of the project to work. These were introducing paging and task-switching.
+Although John had written the high level portions of these two areas, actually
+experimenting with these features was left to me and again the lack of 
+debugging tools (for the kernel was still in an early area of development)
+meant that I had to ensure I had a full understanding of the techniques
+involved when I programmed them. It should also be noted that although the
+source code for the project is quite large, very little of it is written in 
+assembler. The only areas which are currently written in assembler language
+are the 16-bit and 32-bit startup code
+and the entry points to the interrupt and exception handlers. Also a few
+functions are written in assembler for speed. But the large majority of the 
+code is written in C and this aids in the maintainability of the source code.
+ 
+@node Future, , Appraisal, Top
+@chapter Future Directions of the Project.
+
+Given that the project is an operating system, there are many directions in
+which it can be taken. A few of the ideas for expansion of the system are
+outlined as follows:
+
+@section Virtual 32-bit Protected Mode Tasks.
+This was the original aim of the project and if completed would allow almost
+any operating system for the PC to be run under our operating system. This is
+a very complicated addition but having the core system already completed would
+mean that only the parts concerned with emulating the behaviour of the Intel
+80386 in this mode have to be written. Also the emulation of the hardware is
+independent to the operating mode of the processor so the virtual devices
+that have already been written can be reused without any changes.
+
+@section Handling Of The Floating Point Unit (FPU).
+Currently, no attempt is made to save or restore the state of this processor
+in anyway. This has serious implications because if more than one process
+(either part of the operating system itself or a virtual machine) attempted
+to use the FPU, errors could occur and the operating system itself could
+stop working.
+
+@section Emulation Of A Floating Point Unit.
+This is in addition to the above idea and would require a module designed
+to emulate all of the functions of a FPU.  The 80386 processor has support
+for allowing a FPU emulation unit to exist and although this would be a
+large project to undertake, it would give any machine running the operating
+system virtual machines with a complete CPU/FPU pair regardless of whether an
+FPU was installed in the actual machine.
+
+@section Virtual Memory.
+Currently the operating system does not support using a disk unit to provide
+extra memory to the system. Because each machine could use up to one megabyte
+of memory in its simplest configuration, this would be a useful feature.
+Having used a paged memory architecture to implement the memory subsystem
+should mean that the addition of such a feature would not be too difficult to
+implement.
+
+@section Native Tasks.
+All processes running at the moment currently reside in the kernel's memory
+address space and this means that processes can interfere with each others
+data and code areas. Having native tasks would allow protection between tasks
+and could even mean that the development environment could be moved from
+Linux to VMM/386.
+
+@section A Virtual File System (VFS).
+Currently all access to the files on a disk unit go via VMM/386's native
+file system. Unfortunately this means that it is almost impossible to use
+disks with other file systems. Adding a VFS layer would mean that modules
+could be written for other filing systems such as MS-DOS's FAT and OS/2's
+HPFS systems. This would give VMM/386 better interoperability with other
+operating systems residing on the same disk unit.
+
+@section A Virtual Network.
+This is an ambitious addition to the project but one that would be of great
+use. It would require the construction of a virtual device to emulate a
+network card for each virtual machine and a process to act as a network
+between these virtual network cards. This would add two useful abilities to
+the project:
+
+@itemize @bullet
+@item
+The ability to allow virtual machines to communicate to each other via a common
+networking protocol for example TCP/IP.
+
+@item
+The ability to share disks. This is an important function because currently
+if more than one task has access to the same hard disk and they are both using
+the same partition then corruption of the data can occur on that disk because
+each virtual machine assumes it has total control over that disks and would
+not be taking account of changes made by the other machines. This is especially
+true if the virtual machines are buffering data or if two machines both make 
+changes to the data at the same time. By using a virtual network, only one
+machine need be given access to the hard disk. This virtual machine could then
+run a network server program and all the other virtual machines could run
+network client software so only one virtual machine actually had `physical'
+access to the hard disk.
+@end itemize
+
+@section A DOS Extender.
+Adding a module to act as a DOS Extender would be a useful facility. Although
+only of use to virtual machines running the MS-DOS operating system, it would
+enable 32-bit DOS programs to run. It would also be a good start to finally 
+adding full 80386 Protected Mode virtualisation. By providing either VCPI
+(Virtual Control Program Interface) or DPMI (Dos Protected Mode Interface)
+calls it could also allow an operating systems writer to implement a protected
+mode operating system using calls to this module to emulate some of the 80386's
+privileged instruction. It would allow the writer to use VMM/386 as a testbed
+environment for developing an operating system with only minimal changes being
+required when finally making the operating system run on its own.
+
+@section Features Of Newer Processors.
+Since the introduction of the 80386 by Intel, two other processors in the
+80x86 family have been introduced, the i486 and the Pentium. i486 and better
+processors allow the kernel to write protect its own code pages to prevent
+spurious code from doing damage to the system.  One notable
+feature of the Pentium is that it has an enhanced Virtual86 Mode providing
+the capability of virtual interrupt flags. Extending the project to take
+advantage of this enhancement would be a benefit with respect to improving the
+security and efficiency of the overall system.
+ 
+@bye
+
+Local Variables:
+compile-command: "makeinfo --no-headers -o report.doc report.texi"
+End:

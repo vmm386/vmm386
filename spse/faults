@@ -1,0 +1,23 @@
+List of faulting instructions:
+
+mov eax,cr0/2/3		cr1 is reserved
+mov eax,dr0/1/2/3/6/7	dr4/5 are reserved
+clts
+halt
+lmsw ax
+ltr ax
+cli
+sti:
+
+
+List of unfaulting instructions
+
+smsw ax
+str  ax
+arpl ax,ax
+lar ax,ax
+sgdt
+sldt
+sidt
+verr
+verw

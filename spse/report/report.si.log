@@ -1,0 +1,103 @@
+This is TeX, C Version 3.14t3 (format=plain 92.8.10)  3 MAY 1995 13:13
+**&plain report.si.texi
+(report.si.texi (texinfo.tex Loading texinfo package [Version 2.108]: Basics,
+\bindingoffset=\dimen16
+\normaloffset=\dimen17
+\pagewidth=\dimen18
+\pageheight=\dimen19
+\cornerlong=\dimen20
+\cornerthick=\dimen21
+\topandbottommargin=\dimen22
+\outerhsize=\dimen23
+\outervsize=\dimen24
+\EMsimple=\toks12
+\singlespaceskip=\skip18
+\groupinvalidhelp=\toks13
+\mil=\dimen25
+\exdentamount=\skip19
+
+fonts,
+\sffam=\fam8
+\fontdepth=\count26
+ page headings,
+\titlepagetopglue=\skip20
+\titlepagebottomglue=\skip21
+\evenheadline=\toks14
+\oddheadline=\toks15
+\evenfootline=\toks16
+\oddfootline=\toks17
+ tables,
+\tableindent=\dimen26
+\itemindent=\dimen27
+\itemmargin=\dimen28
+\itemmax=\dimen29
+\itemno=\count27
+ indexing,
+\initialskipamount=\skip22
+\secondaryindent=\skip23
+\partialpage=\box16
+\doublecolumnhsize=\dimen30
+ sectioning,
+\chapno=\count28
+\secno=\count29
+\subsecno=\count30
+\subsubsecno=\count31
+\appendixno=\count32
+\contentsfile=\write0
+\absseclevel=\count33
+\secbase=\count34
+\chapheadingskip=\skip24
+\subsecheadingskip=\skip25
+\secheadingskip=\skip26
+ toc printing,
+\contentsrightmargin=\skip27
+\shortappendixwidth=\dimen31
+\tocindent=\dimen32
+
+environments,
+\dblarrowbox=\box17
+\longdblarrowbox=\box18
+\pushcharbox=\box19
+\bullbox=\box20
+\equivbox=\box21
+\errorbox=\box22
+\lispnarrowing=\skip28
+\envskipamount=\skip29
+\circthick=\dimen33
+\cartouter=\dimen34
+\cartinner=\dimen35
+\normbskip=\skip30
+\normpskip=\skip31
+\normlskip=\skip32
+\lskip=\skip33
+\rskip=\skip34
+ defuns,
+\defbodyindent=\skip35
+\defargsindent=\skip36
+\deftypemargin=\skip37
+\deflastargmargin=\skip38
+\parencount=\count35
+ cross reference,
+\auxfile=\write1
+\footnoteno=\count36
+ and turning on texinfo input format.
+\defaultparindent=\dimen36
+)
+(report.si.aux)
+@cpindfile=@write2
+@fnindfile=@write3
+@vrindfile=@write4
+@tpindfile=@write5
+@kyindfile=@write6
+@pgindfile=@write7
+ [1] Chapter 1 Chapter 2 Chapter 3 Chapter 4 [1] [2] [3] ) 
+Here is how much of TeX's memory you used:
+ 889 strings out of 5540
+ 8754 string characters out of 72332
+ 26347 words of memory out of 262141
+ 1731 multiletter control sequences out of 9500
+ 26608 words of font info for 90 fonts, out of 72000 for 255
+ 18 hyphenation exceptions out of 607
+ 10i,4n,10p,218b,127s stack positions out of 300i,40n,60p,3000b,4000s
+
+Output written on report.si.dvi (4 pages, 8464 bytes).

@@ -1,0 +1,369 @@
+Virtual machine monitor for the Intel i386 architecture.
+                            
+                S.Evans, J.Harper, C.Luke
+
+
+  Project description
+ 
+   The proposed system will enable the user to run x86
+programs and operating systems under the control of a
+monitor program, with the aim of allowing the user
+complete control over the environment in which they
+execute.
+ 
+   The goal of this project is to produce a system
+which will virtualise the machine, allowing multiple
+virtual machines to coexist concurrently on the same
+hardware. This includes making virtualised devices which
+completely emulate the actual hardware.
+ 
+   The functionality of the proposed system will
+include:
+ 
+
++    Multiple virtual machines
+     +    Complete isolation
+     +    Pre-emptive multitasking
+
++    Virtual hardware for each machine
+     +    Keyboard
+     +    Video adapter
++    Mouse
++    Serial ports
++    Parallel printer port
++    Hard drive
++    Floppy drive
++    Direct Memory Access (DMA)
++    Programmable Interrupt Controller (PIC)
++    Programmable Interval Timer (PIT)
++    PC Speaker
++    PC Basic Input/Output System (BIOS)
++    CMOS Clock/Non-volatile Memory
++    User definable memory limit
++    A20 address line controller
+
++    User interface for system control
+     +    Virtual machine launching and configuration
+     +    Virtual machine suspension, debugging and resumption
++    Virtual machine shutdown handling
++    Simple editor for creation/maintenance of
+configuration files
+
++    Debugger
+     +    Memory examiner
+          +    Hexadecimal memory display
+          +    Code disassembly
+     +    Memory editor
+          +    Hexadecimal memory editor
+          +    Simple assembler
+     +    Object dumper (Kernel data objects)
+          +    Virtual Machine State
+               +    Register contents
+               +    Memory status
++    Interrupt Descriptor Table (IDT)
++    Global Descriptor Table (GDT)
+               +    Local Descriptor Table (LDT)
+          +    Kernel state
+               +    Internal task structures
+               +    Internal memory structures
+     +    Calculator (Base conversion, memory calculations)
+     +    Trace mode
+          +    Single-step instruction mode
+     +    Breakpoints
+          +    Memory read/write/execution
+          +    I/O port read/write
+
++    Statistics
+     +    Running time
+     +    Processor exceptions
+     +    Device usage
+
++    Resource allocation
+     +    Configurable for each virtual machine
+     +    Dynamically reallocatable
+
++    Native filing system
+     +    Loadable modules storage
+     +    Configuration files storage
+
++    Dynamically loadable modules
+     +    Loaded and discarded on demand
+     +    All subsystems of the kernel will be modules, unless
+     impossible to avoid
+          +    Device drivers
+          +    User shell
++    Debugger
++    System utility library
++    Native filing system
+
+     Specification
+
+     Initially, the Virtual 8086 (v86) mode feature of
+the i386 will be employed to provide the virtual
+machines. Use of the v86 mode inherently provides a means
+of protection between tasks, since it runs under the
+i386s protected mode.
+
+     The Kernel will be loaded at boot time, and preload
+a number of the loadable modules. These will be those
+that provide services such as the System utility library,
+boot device handling and the shell. After whatever
+initialisation has occured, execution will commence
+within the shell.At this point, the system will be
+multitasking, using the system timer to pre-empt the
+scheduler.
+
+     The system will be divided into a number of logical
+units, some of which will naturally fall under the scope
+of loadable modules (see diagram 1). The major use of
+loadable modules is for the Device drivers. Each virtual
+machine will have attached to it a pre-configurable set
+of virtual hardware. The interface for this virtual
+hardware will be handled by the device drivers, which
+will either emulate the requests made of them, perform
+them on physical hardware, or take any actions necessary
+in the arbitration of a device. A number of device
+drivers will be developed to handle, in the first
+instance, the essential hardware, and then extended to
+provide the less essential, but needed items.
+
+     The user interface to the system will be developed
+as a simple line-based command interpreter, and it is
+from this shell that users will launch virtual machines,
+and perform appropriate configuration. Configuration
+files will be in the form of text scripts that the shell
+reads in and interprets as though typed in by the user.
+It will also provide a simple line editor for the
+creation and maintenance of these files, which will be
+stored in a file system native to the monitor.
+
+     The shell will also provide the interface to the
+debugging utilities, which although stored in a separate
+loadable module, are accessed from the shell (after a
+request to load it). This is to save having a bulky
+debugging suite loaded when it is not in use, as it would
+be if a static part of the shell. The shell in itself
+will be quite small, and thus quick to load. The debugger
+probably will not.
+
+     The debugging tools provided will initially aid in
+the monitors own development, but will form part of the
+final product, as an aid to developing and debugging code
+executing in the virtual machines.
+
+     The memory examination tools are split into two
+utilities. A hexdump tool, and a disassembler. The
+hexdumper literally dumps a portion of memory to the
+screen in hexadecimal. It does, however, provide
+additionaly an ASCII display next to the hex, which is a
+useful aid in identifying what the user is looking at.
+The disassembler will look at an executable segment, and
+reverse-assemble the code it finds there, displaying it
+in terms of relatively meaningful mnemonics. If the user
+attempts to disassemble a non-executable segment, then a
+warning will be displayed, stating that this may not
+actually be code.
+
+     Memory modification tools will take the form of a
+hex-editor and a simple assembler. The hex editor will
+make use of the hexdump program to display a number of
+locations, and allow the user to change their values. The
+assembler will enable the user to enter simple assembly
+language statements into the code. Warnings similar to
+the disassembler will be produced upon attempting to
+assemble into a non-executable segment. These two
+utilities will be useful for applying simple patches to a
+loaded virtual machine.
+
+     Object dumping tools will take information provided
+by the Kernel and present it in a meaningful form. This
+gives a means for the user to check the state of the
+virtual machine with information such as register values,
+segment descriptors and location in memory, and what the
+Kernel thinks is happening.
+
+     A simple calculator for arithmetic operations and
+base conversions will be implemented, with the ability to
+do memory-artihmetic, such as real-mode segment
+calculations, mapping linear addresses to physical
+addresses, or logical addresses to linear.
+
+     The debugger will also provide the means to run a
+virtual machine in Trace mode, where each instruction is
+executed individually, single-stepping them and returning
+to the shell to display the status of the machine. The
+user can then examine the effects the code has on the
+system, and optionally resume normal execution of the
+system. In the same vein, the user will be able to set
+breakpoints in the code, which will trigger the shell to
+suspend execution of the code. Such breakpoints can be
+set to trigger on a variety of access methods, including
+Memory reading, writing or execution, and access to I/O
+ports by either input or output.
+
+     To aid in monitoring the system and itM-Fs
+performance, the Kernel, the device drivers and other
+parts of the monitor will record certain information
+about what it is doing, and make such statistics
+available with the debugger. Such information can include
+how long a virtual machine has been running (and indeed
+the monitor), how many of each exception it has incurred,
+what devices it has used and how much, and possibly even
+details on memory usage.
+
+     Each virtual machine will have defined for it, as
+described above, the hardware resources it has access to,
+and whether these will be by use of a virtual driver for
+each of those devices, or by direct access to the device
+itself. It will be possible, from the shell, to
+reallocate resources whilst a virtual machine is
+executing. This would include removing a machinesM-F
+ability to access a device, and enabling it to do so when
+previously it could not.
+
+     The monitor will define a file system where can be
+stored the files in which loadable modules can be found,
+as well as the configuration scripts. The file system
+will be quite simple, but will be able to cope with
+relatively large and small files, and the ability to
+extend files as needed.
+
+     Dynamically loadable modules will be implemented in
+the monitor for a number of reasons. It helps conserve
+memory for those modules that are needed. Unused code can
+be removed from memory, and reloaded if demand calls for
+it later. Code that is never used will never be loaded,
+and if needed, loaded on demand. Being able to unload and
+reload modules allows the user to change which modules
+are in fact being used to provide a service. There may be
+a number of ways to implement a device, and thus a number
+of modules to do so. It also provides a simple interface
+to expand the system later on, but without requiring a
+major rebuild of the Kernel code, and is thus easier to
+debug.
+
+     The Kernel will load modules when first referenced,
+unless directed to preload them at boot time. First
+reference will be when a virtual machine starts and the
+monitor has been directed to give access to a specific
+module. Some modules may be in use most of the time, and
+would hence be more efficient if already in memory. When
+a virtual machine ends, the Kernel will ask each module
+that the machine used in turn if it wants to be unloaded.
+The modules then have the choice, and will usually be
+based on whether or not they are still in use. They may
+also elect to remain in memory all the time.
+
+     Document List
+
++    Technical documentation
+ Since the project is likely to evolve as each stage is
+completed, it does not make sense to maintain a
+complete set of programming documentation, other than
+notes describing module interfaces. However, since it
+is envisaged that at least a booting monitor will be
+available by Christmas, a complete document describing
+the technical interface to the monitor will be
+available then, and then updated for project
+completion. The technical interface covers mostly how
+loadable modules communicate, and since this is the
+backbone of the monitor, must be available early. This
+interface probably will not change drastically once
+completed, and thus the only additional technical
+documentation thereafter will be specific to individual
+modules and unlikely to be needed by other modules.
+
++    User documentation
+ The user documentation will cover how to make use of
+the monitor, from boot time onwards, and describe all
+the features it provides. This will evolve as user
+controllable modules are completed.
+
++    Test report
+ Modules will be tested as they are written, and a note
+of how they were tested and the results given. This
+will be compiled into a document and made available
+with the final product.
+
++    Hardware NMI button
+ This will be used only in the development of the
+system, and not made part of the final product. It will
+aid in the debugging of the Kernel by allowing a fool-
+proof method of halting the system and checking what
+has so far commenced. Available second week in
+November.
+
++    Hardware status display
+ A bank of LEDs to enable at-a-glance checking of the
+system status while it is running, This will be placed
+on the same PCB as the NMI button, and not part of the
+final product
+
++    Software modules
+ The development of the software will be divided into a
+number of sections. At the highest level, the monitor
+can be divided into the units of the Kernel itself, and
+the loadable modules.
+     +    Kernel
+     The kernel is subdivided into three main areas of
+    work. These form effectively form the bulk of the
+    substasks that need to be done. The Kernel forms
+    the fundamental basis of the system. Everything
+    else will depend on it, but not on all of it, so
+    work can still commence on other parts whilst this
+    is being developed. The bulk of the Kernel needs
+    to be completed by the end of Michaelmas term.
+          +    Boot loader
+           This is the mechanism for starting the
+          system. Available start of November.
+          +    Task (virtual machine) management.
+           This is a key element in the system as a
+          whole, but like much of the system, evolves
+          as extra parts are required. The completed
+          task manager will be available by the end of
+          February.
+          +    Memory manager
+           The memory manager is required for efficient
+          use of physical memory. It will be available
+          at the end of December.
+          +    Dynamic module handling
+           This is the part of the kernel by which most
+          of the rest of the monitor is accessed. It
+          will be ready by the end of November.
+
+     +    Loadable modules
+      Most of the rest of the project will be in the
+     form of loadable modules. Since they are modular,
+     development can be largely independant of any
+     other module. The only major dependency is on the
+     Kernel and the support it provides at that stage.
+          +    User interface
+            This will be a very simple command-line
+         driven interface, and will be available by
+         the end of November.
+          +    Debugging tools
+          The debugger is divided into a suite of
+         tools, Initially they will aid in the
+         development of the monitor itself, but
+         ultimately they will be used for the
+         debugging of running virtual machines. The
+         complete suite will be available by the end
+         of March, but some of the simpler tools will
+         be available by the end of November and
+         developed as more of the complete monitor is
+         completed.
+         +    Device drivers
+          These will be developed as necessary, and no
+         fixed date will be placed on them, except
+         that they will all be available with the
+         final product. Initially, only those that are
+         needed for the monitor to run will be
+         developed, and then the library of drivers
+         expanded as more of the system is
+         operational.
+         +    Native filing system
+              This is the means by which the monitor
+         will store and retrieve its files. It will be
+         available by the end of November.
+
+

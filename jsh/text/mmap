@@ -1,0 +1,52 @@
+
+Memory Map.
+***********
+
+ 4G  +------------------+ -------------> +------------------+   4G
+     | Kernel space     |                |                  |
+ X   +------------------+  --            | Dynamic kernel   |
+     |                  |    \           |  code & data     |
+     |                  |     \          +------------------+
+     |                  |      \         | Static Kernel    |
+     |                  |       \        |  code & data     |
+     | Task/VM          |        \       +------------------+   Y
+     |  address space   |         \      |                  |
+     |                  |          \     |                  |
+     |                  |           \    |                  |
+     |                  |            \   +------------------+
+     |                  |             \  | Mapping of       |
+     |                  |              \ |  physical memory |
+ 0   +------------------+                +------------------+   X
+
+[ Excuse my poor ascii art :) ]
+
+After thinking about the mm stuff I feel that this is probably one of
+the best layouts. Some reasons/qualifications are:
+
+	* The kernel must be mapped into the task's address space so
+	that interrupts/exceptions can be handled easily
+
+	* Kernel code is able to access all of physical memory by
+	simply OR'ing X into the actual address.
+
+	* I know that we had reservations about taking up some of the
+	tasks's segment but I don't think it really matters; if we can
+	solve the major problems about virtualising the 386's
+	segmentation this will surely be a slight modification...
+
+	* Protection-wise it doesn't matter that the kernel doesn't
+	have its own segment; we can simply set the supervisor bit of
+	all kernel pages.
+
+I'm not too sure about the best values of X and Y, it has to be big
+enough to allow as much physical memory as anyone is likely to have to
+be mapped in and to give the kernel enough space. I thought that 4M
+would be enough for the kernel (static and dynamic), this allows the
+whole of the kernel to fit neatly into one page directory. If we then
+allow 124M for the map of physical mem you come to a nice round figure
+of 128M, i.e. X = 0xF8000000, Y=0xFFC00000.
+
+Well, what do you think? I expect I've probably made some gross error
+or miscalculation somewhere :-( 
+
+john

@@ -1,0 +1,8 @@
+The vprinter command setups virtual printer ports for a virtual machine. This
+allows printing from the virtual machine via the printer spooler.
+
+@deftypefn {Command} {} vprinter @var{addr} [@var{addr}]
+This command creates a virtual printer for a virtual machine. @var{addr}
+specifices the base address of the printer port and upto four base addressess
+(i.e. four virtual printer ports) may be defined.
+@end deftypefn

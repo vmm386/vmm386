@@ -1,0 +1,160 @@
+[ This is -*-Text-*- ]
+
+Objectives (slide #1)
+*********************
+
+The objective of this project is to create a new operating system for
+the 386 computer in which multiple *virtual machines* can be executed
+concurrently. Each virtual machine will provide the program
+(or operating system) running in it with an exact replica of a real PC.
+This means that standard PC operating systems (e.g. DOS, theoretically
+our project itself!) will be able to be executed in a virtual machine.
+
+Functionality
+=============
+
+At first we intend to provide multiple virtualised 8086 machines (the
+8086 is the 80386's 16-bit forerunner). The 80386 was designed with
+this purpose in mind, and therefore provides hardware support to allow
+multiple 8086 tasks.
+  Once this has been achieved, and all the essential hardware devices
+have been virtualised, we intend to study the feasibility of providing
+virtual 80386 machines. Hardware support for this is not provided by
+the processor, and it is not immediately obvious whether this is
+feasible.
+
+Since it is not possible to allow a virtual machine direct access to
+the computer's hardware devices (two VMs may want to use the same
+resource at once) one of the main objectives of this project is to
+*virtualise* each hardware device. This entails writing a device driver
+for each piece of hardware, which will intercept any access to it's
+device by a virtual machine and somehow emulate this access.
+
+The system will provide a user interface in the form of a
+command-line based *shell*; this will allow the user to dynamically
+configure and launch virtual machines as they are needed. The
+configuration of a virtual machine defines the (virtual) resources
+which it is allowed to access, such as the total size of its memory,
+which portion of the hard disk it may access, and so on.
+
+Since we think that one of the most common reasons for needing to
+execute two operating systems concurrently is for development purposes
+(i.e. create a new version of a system under development in one virtual
+machine then test it in another), the system will include many features
+to aid the development and testing of the programs running in the
+virtual machines. The *debugger* module will provide complete control
+over each virtual machine. 
+  The debugger will use the shell as its user interface, and will
+provide commands to examine the state of a virtual machine (i.e. memory
+dumps, code disassembly), modify this state (memory editor, simple
+assembler) and, most importantly, execute the virtual machine in a
+controlled manner (code single stepping, breakpoints).
+
+To keep the design of the overall system as clean as possible each
+conceptual entity (of the system) will be written as a separate
+*module*. Each module will export a subset of its functions and data
+objects to allow other modules to access them; this is the *only* way
+in which modules may interact.
+  Since each module is totally separate from the others it will be
+possible to demand-load each module as it is required. Some modules
+will need to be resident throughout: the kernel for example.
+
+Why is it interesting?
+======================
+
+The main reason we chose this project was that we felt it would be
+fairly challenging to write, and that once we had finished we would
+have a useful system.
+
+An aspect which particularly appealed to us was the opportunity to
+attempt to virtualise the actual 80386 processor itself. Although we
+know of several implementations of virtualised 8086s (for example OS/2
+provides VDMs) we have not seen a virtualised 80386. Although we are by
+no means certain it is possible, it will be very interesting to attempt
+it.
+
+We are also interested in developing an operating system (albeit a
+simple one) itself. The development of operating systems software is
+very different to the development of ``normal'' applications. (Probably
+the biggest difference is the lack of a debugger!)
+
+
+Commentary on slide #2 (the diagram)
+************************************
+
+This diagram shows the overall structure of the system and how the
+individual entities will communicate with each other.
+
+Starting at the top [point to VMs], the blocks labelled ``VM'' each
+represent a virtual machine running under the control of our system.
+
+The block in the middle of the diagram [point to this] represents our
+project itself; each sub-block shows a separate module. The ``kernel''
+[point to kernel block] contains the most crucial parts of the system:
+including the task switching, memory management and the module handling.
+
+  The ``shell'' block corresponds to the user interface module, it
+uses kernel functions to perform most of the commands entered by the
+user. The ``debugger'' module is part of the shell, in that it receives
+the commands entered which address it, but it communicates directly
+with the kernel to help it execute these commands.
+
+  The ``drivers'' section shows the device driver modules; each driver
+controls a single hardware device and provides a virtualised replica of
+that device for each virtual machine. I/O requests from a virtual
+machine to a device will be intercepted by the kernel and routed to the
+appropriate device driver.
+
+The last block in the diagram simply corresponds to the hardware
+devices in the computer, such as disk drives, video adapter, keyboard,
+etc..
+
+
+Project Plans (slide #3)
+************************
+
+This slide shows the main tasks to be completed in the project,
+together with the group member or members implementing it and the date
+by which it should be finished.
+
+The first part of the project to be implemented will be the ``system
+initialisation and startup'' task. This is basically a loader to
+bootstrap the kernel from disk. Naturally, everything else depends upon
+this task being successfully completed 8-)
+
+Once we are able to bootstrap the system the next step will be to
+create a single virtual machine which runs on the actual hardware
+together with the shell. The tasks which must be completed to achieve
+this are the ``Dynamic module handling'', the ``User interface'' and
+the ``Native filing system''. Hopefully the amount of code needed to
+actually create the simple virtual machine will be minimal; just
+setting up processor data structures.
+
+Once this has been achieved the next steps will be to complete the
+``Task management'' task and to begin to write the virtual device
+drivers. Certain of the drivers will need to be completed sooner than
+others (for example, the keyboard, screen and floppy disk will probably
+have to be written first). Once we have the essential devices covered,
+work will start on virtualising the less important things, for example
+we may support high resolution graphics.
+
+When we have a system capable of running multiple 8086 machines with
+fully virtualised hardware we will move on to the most challenging part
+of the project: attempting to virtualise 80386 machines. This may or
+not be feasible (we already know of several 386 instructions which it
+is impossible to virtualise), if not we may be able to create a semi-
+virtualised 386, such that it will still be useful. Another possibility
+would be to provide system calls to emulate the parts of the 386 that
+are impossible to virtualise. This would enable operating systems
+developers to test their 386 systems by taking advantage of the
+necessary system calls.
+
+The debugger is one of the largest tasks of all; work will be done on
+this throughout the duration of the project. Since it is not essential
+to the working of the system (an `added extra') no other tasks depend
+on it.
+
+The documentation of the system will consist of a user's manual; unlike
+most operating systems there is no need for a programmer's manual,
+since the programmer's interface is already well-defined: it's simply
+the same as a standard 386 PC.

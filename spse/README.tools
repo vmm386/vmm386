@@ -1,0 +1,11 @@
+Tools used for creating 16 / 32 bit binary images and other things
+
+bbin		16 bit exe to bin - checks file info (used for bootsector)
+bbin16		16 bit exe to bin - generic
+bsc		Bootsector code to .c file, checks sizes
+btoa		Generic binary to ascii C array generator
+disasm		Raw binary disassembler
+e2b		32 bit exe to bin - for kernel image
+makeimage	creates a disk file image
+sysdisk		Adds the startup code and kernel to a file system
+wbb		Writes a bootsector to a file system

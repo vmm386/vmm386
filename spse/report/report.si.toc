@@ -1,0 +1,12 @@
+\chapentry {Introduction to the Project.}{1}{1}
+\chapentry {My Contribution to the Project.}{2}{1}
+\chapentry {My Appraisal of the Project.}{3}{1}
+\chapentry {Future Directions of the Project.}{4}{1}
+\secentry {Adding Virtual 32-bit Protected Mode Tasks.}{4}{1}{1}
+\secentry {Handling Of The Floating Point Unit (FPU).}{4}{2}{1}
+\secentry {Emulation Of A Floating Point Unit.}{4}{3}{2}
+\secentry {Adding virtual memory.}{4}{4}{2}
+\secentry {Adding Native Tasks.}{4}{5}{2}
+\secentry {A Virtual File System (VFS).}{4}{6}{2}
+\secentry {A Virtual Network.}{4}{7}{2}
+\secentry {Writing A DOS Extender}{4}{8}{3}

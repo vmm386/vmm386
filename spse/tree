@@ -1,0 +1,27 @@
+./debugger
+./drivers/hd
+./drivers/kbd/keymaps
+./drivers/kbd
+./drivers/video
+./drivers/tty
+./drivers/floppy	*
+./drivers/vide
+./drivers/vbios
+./drivers/vm
+./drivers/vkbd
+./drivers
+./fs/test
+./fs
+./kernel/mm
+./kernel/modules
+./kernel/misc		*
+./kernel/init		*
+./kernel/traps		*
+./kernel/tasks		*
+./kernel/alloc
+./kernel
+./shell
+./start16		*
+./test
+./tools			*
+./vmm

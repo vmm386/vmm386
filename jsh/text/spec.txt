@@ -1,0 +1,163 @@
+[ This is -*-Text-*- ]
+
+Shell
+*****
+
+The shell is the user's interface to the kernel. It is entered when the
+system is first booted and when a special hot-key is typed (<Alt-SysReq>?).
+
+The user interacts with the shell by entering lines of text
+representing commands. Each command line consists of the name of the
+command to invoke followed by zero or more space-separated arguments.
+
+As well as accepting commands which manipulate the system (e.g.
+configure and launch virtual machines) the shell also provides the
+interface to the system debugger (see section ?.?). When the debugger
+initialises itself it registers each of its available commands with the
+shell. The shell then recognises debugger commands as they are entered
+and passes control to the relevant debugger function.
+
+Each time the shell is entered all existing virtual machines are
+suspended; this allows the user to examine the current state of each
+machine in a controlled manner.
+
+As mentioned above the shell is responsible for launching new virtual
+machines. When the user wishes to create a new virtual machine they use
+shell commands to set any the parameters of the new machine (i.e. the
+amount of memory to give it, which devices it's allowed to access, etc).
+When the parameters have been specified a different command is entered
+which configures a new virtual machine according to these parameters,
+then starts it running.
+
+[ List shell commands here?? ]
+
+
+Kernel Modularisation
+*********************
+
+Although the virtual machine monitor (the kernel) runs in a monolithic
+manner (i.e. all the kernel is in one address space) it is a good idea
+to maintain as much modularity as possible. This makes testing easier
+and the whole system less prone to error.
+
+Each module (i.e. each device driver/virtualiser) is separated into its
+own module and stored separately on disk. When a module is required it
+is loaded into a free area of the kernel's address space. It then
+initialises itself and exports any functions it contains which may be
+called by other modules.
+
+Supporting dynamically-loadable modules in this way has a number of
+significant advantages.
+
+	* It reduces memory usage since drivers are only loaded if they
+	are required.
+
+	* Extra device drivers can be installed without having to
+	recompile the whole kernel (unlike in many Unix-style
+	operating systems).
+
+	* Modules that are being developed can be tested and debugged
+	much more easily.
+
+
+Keyboard Virtualisation
+***********************
+
+This module controls the keyboard hardware and provides each virtual
+machine with its own virtual keyboard. The console module (see
+section ?.?) controls which virtual machine actually gets given the
+input from the keyboard.
+
+Conceptually, this module can be split into two main areas:
+
+	* An interface with the actual keyboard hardware/controller. This
+	is basically an interrupt-driven keyboard handler receiving each
+	scan code the keyboard generates. It also maintains a list of the
+	keys that are currently depressed.
+
+	* An interface with the virtual machines. This must appear to be a
+	normal PC keyboard and its 8042 controller. To do this it will
+	emulate any access to the keyboard I/O ports (0x60 and 0x64) by
+	a virtual machine and generate pseudo-interrupts in the virtual
+	machine when a scan code is available (if necessary).
+
+
+Video Virtualisation
+********************
+
+This module controls and virtualises the system's video hardware.
+Initially this will simply provide a virtual 80x25 monochrome text mode
+since this is the simplest to create. As the project progresses it will
+be upgraded to a full virtualisation of the VGA hardware.
+
+[ Is the following too technical for a functional spec? ]
+
+Each virtual machine has a virtual video buffer allocated for it when
+it is launched. This buffer is used to store the state of the video
+buffer for the virtual machine. Only the virtual machine currently
+owning the console is allowed to directly access the true video memory,
+the rest will have their virtual video buffer mapped into their address
+space where the video memory normally resides.
+
+As the console owner is changed the losing machine's virtual video buffer
+is updated from the contents of the actual video memory while the gainer's
+virtual video buffer is copied to the actual video memory. Then the losing
+machine has its virtual buffer mapped into its address space and the
+gaining machine has the actual video memory mapped into its address space.
+
+
+Console Management
+******************
+
+The console is a combination of the keyboard and video drivers; at any
+time one virtual machine is allowed to access the real video memory
+and all characters typed at the keyboard (excluding hot keys) are
+passed straight to it.
+
+The console manager controls which virtual machine has these
+privileges, using services provided by the keyboard and video modules
+to do the actual switching.
+
+The user may type hot key sequences to explicitly switch the owner of
+the console, alternatively a shell command will exist to do the same
+job.
+
+
+Hard Disk Virtualisation
+************************
+
+Since each virtual machine is under the impression that it has total
+control of a real PC computer it is necessary to create the illusion of
+a real hard disk for each virtual machine. The system's hard disk will
+be divided into separate (contiguous) areas for each virtual machine;
+these areas will appear to the virtual machine as a normal hard disk.
+
+It is not safe to allow multiple virtual machines to share the same
+area of the disk: as soon as one of them makes an assumption of the
+current state of the disk (based upon the actions it has previously
+performed on the disk) a possible error is introduced (if a different
+virtual machine modified the disk's contents in the meantime).
+
+The hard disk module must also virtualise the I/O ports associated with
+the hard disk hardware and manage any access to the disk. This means
+that it will have to interface with the DMA module.
+
+
+Floppy Disk Virtualisation
+**************************
+
+Unlike with the machine's hard disk, it is not feasible to split the
+floppy drive into multiple sections (obviously!). So a different
+approach must be taken to allow each virtual machine access to this
+device.
+
+At any one time, one virtual machine will be allowed to access the
+floppy disk controller as normal, all the other virtual machines will
+be allowed to access the (virtual) floppy I/O ports but to them it will
+always appear that the disk drive does not contain a disk.
+
+A shell command will exist to change the `owner' of the floppy drive
+on the fly (although not during disk accesses).
+
+[ I don't know how much sense this section makes, but I guess it's a
+  start. ]

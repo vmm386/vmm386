@@ -1,0 +1,176 @@
+This is Info file report.info, produced by Makeinfo-1.55 from the input
+file report.si.texi.
+
+
+File: report.info,  Node: Top,  Next: Introduction
+
+Final Report
+************
+
+* Menu:
+
+* Introduction::	Introduction to the Project.
+* Contribution::	My Contribution to the Project.
+* Appraisal::		My Appraisal of the Project.
+* Future::		Future Directions of the Project.
+
+
+File: report.info,  Node: Introduction,  Next: Contribution,  Prev: Top,  Up: Top
+
+Introduction to the Project.
+****************************
+
+   The aim of the project was to write a small operating system for the
+Intel 80386 processor capable of supporting multiple virtual 8086 PC's
+using an inbuilt mode of the 80386. This involved writing a kernel and
+the device drivers to control all of the hardware and also a filing
+system and user interface. We also had to create an enviroment that
+emulated the hardware of a standard PC.
+
+   This project intrested me for several reasons. I have a strong
+intrest in operating systems and operating systems technology and to
+have the chance to write one was greatly welcomed. Secondly, I was
+intrigued by the process of emulating a computer environment and wanted
+to see what technical challenges would arise from such a project.
+Because we were emulating a system already available, there was a
+device interface that we had to conform to and it was quite intresting
+to see how hardware could be emulatedby software.  And finally, I
+wanted to gain an indepth knowledge of the architecture of the Intel
+80x86 family of processors with respect to how they work and how they
+are programmed.
+
+
+File: report.info,  Node: Contribution,  Next: Appraisal,  Prev: Introduction,  Up: Top
+
+My Contribution to the Project.
+*******************************
+
+
+File: report.info,  Node: Appraisal,  Next: Future,  Prev: Contribution,  Up: Top
+
+My Appraisal of the Project.
+****************************
+
+
+File: report.info,  Node: Future,  Prev: Appraisal,  Up: Top
+
+Future Directions of the Project.
+*********************************
+
+   Given that the project is an operating system, there are many
+directions in which it can be taken. A few of the ideas for expansion
+of the system are outlined as follows:
+
+Adding Virtual 32-bit Protected Mode Tasks.
+===========================================
+
+   This was the original aim of the project and if completed would
+allow almost any operating system for the PC to be run under our
+operating system. This is a very complicated addition but having the
+core system already completed would mean that only the parts concerned
+with emultaing the behaviour of the Intel 80386 in this mode have to be
+written. Also the emulation of the hardware is independant to the
+operating mode of the processor so the virtual devices that have
+already been written can be reused without any changes.
+
+Handling Of The Floating Point Unit (FPU).
+==========================================
+
+   Currently, no attempt is made to save or restore the state of this
+processor in anyway. This has serious implications because if more than
+one process (either part of the operating system itself or a virtual
+machine) attempted to use the FPU, erorrs could occur and the operating
+system itself could stop working.
+
+Emulation Of A Floating Point Unit.
+===================================
+
+   This is in addition to the above idea and would require a module
+designed to emulate all of the functions of a FPU.  The 80386 processor
+has support for allowing a FPU emulation unit to exist and although
+this would be a large project to undertake, it would give any machine
+running the operating system virtual machines with a complete CPU/FPU
+pair regardless of wether an FPU was installed in the actual machine.
+
+Adding virtual memory.
+======================
+
+   Currently the operating system does not support using a disk unit to
+provide extra memory to the system. Because each machine could use upto
+one megabyte of memory in its simplest configuration, this would be a
+useful feature.  Having used a paged memory architecture to implement
+the memory subsystem should mean that the addition of such a feature
+would not be too difficult to implement.
+
+Adding Native Tasks.
+====================
+
+   All processes running at the moment currently reside in the kernel's
+memory address space and this means that processes can interfere with
+each others data and code areas. Having native tasks would allow
+protection between tasks and could even mean that the development
+environment could be moved from Linux to VMM/386.
+
+A Virtual File System (VFS).
+============================
+
+   Currently all access to the files on a disk unit go via VMM/386's
+native filesystem. Unfortuantley this means that it is almost
+impossible to use disks with other file systems. Adding a VFS layer
+would mean that modules could be written for other filing systems such
+as MS-DOS's FAT and OS/2's HPFS systems. This would give VMM/386 better
+interoperability with other operating systems residing on the same disk
+unit.
+
+A Virtual Network.
+==================
+
+   This is an ambitious addition to the project but one that would be
+of great use. It would require the construction of a virtual device to
+emulate a network card for each virtual machine and a process to act as
+a network between these virtual network cards. This would add two
+useful abilities to the project:
+
+   * The ability to allow virtual machines to communicate to each other
+     via a common networking protocol for example TCP/IP.
+
+   * The ability to share disks. This is an important function because
+     currently if more than one task has access to the same hard disk
+     and they are both using the same partition then corruption of the
+     data can occur on that disk because each virtual machine assumes
+     it has total control over that disks and would not be taking
+     account of changes made by the other machines. This is especially
+     true if the virtual machines are buffering data or if two machines
+     both make changes to the data at the same time. By using a virtual
+     network, only one machine need be given access to the hard disk.
+     This virtual machine could then run a network server program and
+     all the other virtual machines could run network client software
+     so only one virtual machine actually had `physical' access to the
+     hard disk.
+
+Writing A DOS Extender
+======================
+
+   Adding a module to act as a DOS Extender would be a useful facility.
+Although only of use to virtual machines running the MS-DOS operating
+system, it would enable 32-bit DOS programs to run. It would also be a
+good start to finally adding full 80386 Protected Mode virtualisation.
+My providing either VCPI (Virtual Control Program Interface) or DPMI
+(Dos Protected Mode Interface) calls it could also allow an operating
+systems writer to implement a protected mode operating system using
+calls to this module to emulate some of the 80386's privileged
+instruction. It would allow the writer to use VMM/386 as a testbed
+environment for developing an operating system with only minimal
+changes being required when finally making the operating system run on
+its own.
+
+
+
+Tag Table:
+Node: Top94
+Node: Introduction370
+Node: Contribution1604
+Node: Appraisal1760
+Node: Future1904
+
+End Tag Table
